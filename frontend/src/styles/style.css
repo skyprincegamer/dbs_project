@@ -1,0 +1,17 @@
+@media (max-width: 768px) {
+.nav-links-desktop {
+    display: none !important;
+}
+
+.mobile-menu-button {
+    display: block !important;
+}
+
+.nav-links-mobile {
+    display: flex !important;
+}
+
+.nav-links-mobile.hidden {
+    display: none !important;
+}
+}

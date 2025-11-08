@@ -3,7 +3,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 const tempMiddleWare = async (req, res, next) =>{
-    // const token = req.cookies["SubjectSwapLoginJWT"];
+    // const token = req.cookies["PaperPediaLoginJWT"];
     const {token} = req.body;
     if (!token) return res.status(401).json({ message: 'Not logged in' });
     await jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {

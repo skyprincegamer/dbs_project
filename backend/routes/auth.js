@@ -143,7 +143,7 @@ router.post('/login', async (req, res) => {
 
   user.passwordHash = undefined; // Remove password hash from user object
   user.email = undefined; // Remove email from user object for security
-  res.status(200).cookie("SubjectSwapLoginJWT", token, { 
+  res.status(200).cookie("PaperPediaLoginJWT", token, { 
     httpOnly: true, 
     secure: true, 
     sameSite: 'None', 

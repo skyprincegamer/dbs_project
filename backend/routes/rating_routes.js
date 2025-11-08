@@ -3,7 +3,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 const tempMiddleWare = async (req, res, next) => {
-    // const userId = req.cookies["SubjectSwapLoginJWT"];
+    // const userId = req.cookies["PaperPediaLoginJWT"];
     const {token: userId} = req.body;
     if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
