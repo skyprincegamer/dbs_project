@@ -139,7 +139,7 @@ export default function ArticleDisplay() {
                                 {`${import.meta.env.VITE_BACKEND_URL}/article/${elem.to_article_id}`}
                             </Link>
                             <h6>
-                                {titles? refTitles[index] : " "}
+                                {refTitles? refTitles[index] : " "}
                             </h6>
                         </li> ) : " "}
                     </ul>
