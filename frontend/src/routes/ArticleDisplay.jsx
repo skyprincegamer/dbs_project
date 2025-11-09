@@ -53,7 +53,7 @@ export default function ArticleDisplay() {
                 setTags(tag);
                 setRefs(ref);
                 console.log(ref)
-                const titles = await Promise.all(
+                const titles = ref ? await Promise.all(
                     ref.map(async (elem) => {
                         const uuid = elem.to_article_id;
                         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/article/${uuid}`, {
@@ -65,7 +65,7 @@ export default function ArticleDisplay() {
                         const art = await res.json();
                         return art.title;
                     })
-                );
+                ) : null;
                 setRefTitles(titles);
             } catch (err) {
                 setMessage({ text: err.message || 'Error loading article', type: 'error' });
@@ -139,7 +139,7 @@ export default function ArticleDisplay() {
                                 {`${import.meta.env.VITE_BACKEND_URL}/article/${elem.to_article_id}`}
                             </Link>
                             <h6>
-                                {refTitles[index]}
+                                {titles? refTitles[index] : " "}
                             </h6>
                         </li> ) : " "}
                     </ul>
