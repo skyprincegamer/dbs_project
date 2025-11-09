@@ -244,7 +244,6 @@ class ArticleModel {
                     else if (result.length == 0)
                         return resolve(null)
                     else {
-                        console.log(result)
                         return resolve(result)
                     }
                 }
