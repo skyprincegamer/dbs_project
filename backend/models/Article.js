@@ -193,7 +193,66 @@ class ArticleModel {
             });
         });
     }
+    static findByID(id){
+        return new Promise((resolve , reject) => {
+            const query = `
+                SELECT * FROM articles WHERE article_id = ?
+            `
+            conn.query(
+                query,
+                [id], (err, result, fields) => {
+                    if(err)
+                        return reject(err)
+                    else if (result.length == 0)
+                        return resolve(null)
+                    else {
+                        return resolve(result[0])
+                    }
+                }
+            )
+        })
+    }
+    static findTagsByID(id){
+        return new Promise((resolve , reject) => {
+            const query = `
+                    SELECT tagName FROM tags WHERE article_id = ?
+                `
+            conn.query(
+                query,
+                [id], (err, result, fields) => {
+                    if(err)
+                        return reject(err)
+                    else if (result.length == 0)
+                        return resolve(null)
+                    else {
+                        return resolve(result)
+                    }
+                }
+            )
+        })
+    }
+    static giveAllReferences(id){
+        return new Promise((resolve , reject) => {
+            const query = `
+                    SELECT to_article_id FROM references_table WHERE article_id = ?
+                `
+            conn.query(
+                query,
+                [id], (err, result, fields) => {
+                    if(err)
+                        return reject(err)
+                    else if (result.length == 0)
+                        return resolve(null)
+                    else {
+                        console.log(result)
+                        return resolve(result)
+                    }
+                }
+            )
+        })
 
+    }
 }
+
 
 module.exports = ArticleModel;

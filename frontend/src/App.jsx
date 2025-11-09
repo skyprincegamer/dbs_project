@@ -11,6 +11,7 @@ import Search from './routes/search/Search';
 import NotFoundPage from './routes/NotFoundPage';
 import AddArticle from './routes/AddArticle';
 import SearchTags from './routes/search/SearchTags';
+import ArticleDisplay from './routes/ArticleDisplay'
 
 const App = () => {
   return (
@@ -26,6 +27,7 @@ const App = () => {
           <Route path="/search" element={<ProtectedRoute component={Search}/>} />
           <Route path="/searchtags" element={<ProtectedRoute component={SearchTags}/>} />
           <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/article/:uuid" element={<ProtectedRoute component={ArticleDisplay}/>}/>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
     </AuthProvider>

@@ -1,6 +1,6 @@
 
 // importing mysql module
-const mysql = require('mysql');
+const mysql = require('mysql2');
 
 // configurations for creating mysql connection
 const connection = mysql.createConnection({
@@ -14,6 +14,7 @@ const connection = mysql.createConnection({
 // executing connection
 connection.connect(function(err) {
     if (err) {
+        console.log(err)
         console.log("error occurred while connecting");
     } else {
         console.log("connection created with mysql successfully");

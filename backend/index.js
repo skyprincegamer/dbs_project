@@ -20,10 +20,16 @@ const authRoutes = require('./routes/auth');
 const article_addition = require('./routes/article_addition');
 const searchRoutes = require('./routes/search');
 const ratingRoutes = require('./routes/rating_routes');
+const articleDisplay = require('./routes/article_display')
+const tagsDisplay = require('./routes/tag_display')
+const referenceDisplay = require('./routes/reference_display')
 app.use('/', authRoutes);
 app.use('/add-article', article_addition);
 app.use('/search', searchRoutes);
 app.use('/rating_routes', ratingRoutes);
+app.use('/article' , articleDisplay)
+app.use('/tags' , tagsDisplay)
+app.use('/references', referenceDisplay)
 
 app.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`);

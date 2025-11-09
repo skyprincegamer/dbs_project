@@ -18,7 +18,7 @@ export default function AddArticle() {
     const [message, setMessage] = useState({ text: '', type: '' });
 
     const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const refRegex = new RegExp(`^${escapeRegExp(frontendUrl)}/articles/([0-9a-fA-F-]{36})$`);
+    const refRegex = new RegExp(`^${escapeRegExp(frontendUrl)}/article/([0-9a-fA-F-]{36})$`);
 
     const handleAddTag = () => {
         const t = currentTag.trim();
@@ -39,7 +39,7 @@ export default function AddArticle() {
         const m = ref.match(refRegex);
         if (!m) {
             return setMessage({
-                text: `Reference must match: ${frontendUrl}/articles/:uuid (uuid v4 format)`,
+                text: `Reference must match: ${frontendUrl}/article/:uuid (uuid v4 format)`,
                 type: 'error'
             });
         }
@@ -270,7 +270,7 @@ export default function AddArticle() {
                             value={currentRef}
                             onChange={(e) => setCurrentRef(e.target.value)}
                             disabled={loading}
-                            placeholder={`${frontendUrl}/articles/:uuid`}
+                            placeholder={`${frontendUrl}/article/:uuid`}
                             style={{
                                 flex: 1,
                                 padding: '0.65rem',
@@ -298,7 +298,7 @@ export default function AddArticle() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {references.map((uuid, i) => {
-                            const full = `${frontendUrl}/articles/${uuid}`;
+                            const full = `${frontendUrl}/article/${uuid}`;
                             return (
                                 <div
                                     key={i}
