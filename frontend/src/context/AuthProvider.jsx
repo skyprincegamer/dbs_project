@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }) => {
       setError('Login failed');
       throw err;
     }
-    if (user) navigate('/match');
+    if (user) navigate('/search');
   };
 
   const logout = async () => {

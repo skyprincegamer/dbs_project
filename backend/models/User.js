@@ -13,7 +13,7 @@ class UserModel {
             if (querParamString !== "") {
                 querParamString += " AND ";
             }
-            querParamString += `${key} = '${query[key]}'`;
+            querParamString += `${key} = '${(query[key]===true || query[key]===false) ? Number(query[key]) : query[key]}'`;
         }
         return new Promise((resolve, reject) => {
             conn.query(`SELECT * FROM users WHERE ${querParamString} LIMIT 1`, (err, result) => {
@@ -50,7 +50,7 @@ class UserModel {
             if (queryParamString.slice(-2) !== " (") {
                 queryParamString += ", ";
             }
-            queryParamString += `'${userData[key]}'`;
+            queryParamString += `'${(userData[key]===true)? 1 : userData[key]}'`;
         }
         queryParamString += ")";
         return new Promise((resolve, reject) => {

@@ -51,7 +51,7 @@ const NotFoundPage = () => {
   const handleGoDashboard = () => {
     // This would typically navigate to your home page
     // For a real app, you might use React Router's history.push('/')
-    window.location.href = '/dashboard';
+    window.location.href = '/search';
   };
 
   return (

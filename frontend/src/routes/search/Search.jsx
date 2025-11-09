@@ -17,7 +17,7 @@ const Search = () => {
 
       setIsLoading(true);
       try {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/search/person`, {
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/search/article`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -40,12 +40,11 @@ const Search = () => {
   return (
     <div style={{ padding: '20px', height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <nav style={{display: 'flex', marginBottom: '20px', alignItems: 'center', backgroundColor: '#1427d0ff', padding: '3px 10px', borderRadius: '5px'}}>
-        <button style={{ height: '35px', width: '40px', background: 'transparent', border: 'none', borderRadius: '5px', color: 'white' }} onClick={() => navigate(-1)}>&larr;</button>
-        <h1 style={{marginLeft: '1rem', color: 'white'}}>Search People</h1>
+        <h1 style={{marginLeft: '1rem', color: 'white'}}>Search By Title</h1>
       </nav>
       <input
         type="text"
-        placeholder="Search by Name"
+        placeholder="Search by Title..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         style={{
@@ -60,9 +59,9 @@ const Search = () => {
       {isLoading ? (
         <CircularProgress />
       ) : searchResults.length > 0 ? (
-        searchResults.map((person) => (
+        searchResults.map((article) => (
           <div
-            key={person._id}
+            key={article.article_id}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -73,28 +72,17 @@ const Search = () => {
             }}
           >
             <div style={{display: 'flex', flex: 4, flexDirection: 'row', alignContent: 'center', alignItems: 'center'}}>
-              <a href={`/profile/${person._id}`} >
-              <img
-                src={person.profilePicUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(person.username)}
-                alt={person.username}
-                style={{ width: '50px', height: '50px', borderRadius: '50%', marginRight: '10px' }}
-              />
-              </a>
-              <a href={`/profile/${person._id}`} style={{ marginRight: '10px', color: 'black', textDecoration: 'none' }}>
-                <b>{person.username}</b>
+              <a href={`/article/${article.article_id}`} style={{ marginRight: '10px', color: 'black', textDecoration: 'none' }}>
+                {article.title}
               </a>
             </div>
             <div style={{flex: 1}}>
-              <a href={`/chat-to-connect/${person._id}`} style={{ textDecoration: 'italic', color: 'white', justifyContent: 'right' }}>
-                <button style={{ padding: '5px 10px', backgroundColor: '#007bff', border: 'none', borderRadius: '5px' }}>
-                  Chat Now
-                </button>
-              </a>
+              <b>By:</b> {article.username}
             </div>
           </div>
         ))
       ) : (
-        <div>No people found</div>
+        <div>No articles found</div>
       )}
     </div>
   );

@@ -47,10 +47,9 @@ const ProtectedRoute = ({ component: Component, navbarAdditionContent }) => {
 
            {/* Navigation Links - Desktop */}
               <div className="nav-links-desktop" style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-              <NavTab to="/dashboard" text="Dashboard" />
-              <NavTab to="/match" text="Match Now" />
-              <NavTab to="/edit-profile" text="Edit Profile" />
-              <NavTab to="/chat" text="Previous Chats" />
+              <NavTab to="/search" text="Search By Title" />
+              <NavTab to="/searchtags" text="Search By Tags" />
+              <NavTab to="/add-article" text="Add an Article" />
 
             {/* User Profile Section */}
              <div style={{
@@ -63,7 +62,7 @@ const ProtectedRoute = ({ component: Component, navbarAdditionContent }) => {
             {/* User Avatar & Name */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <img
-               src={user?.user?.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user?.username || 'User')}`}
+               src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user?.username || 'User')}`}
                alt={user?.user?.username || 'User'}
                style={{
                width: '32px',
@@ -158,7 +157,7 @@ const ProtectedRoute = ({ component: Component, navbarAdditionContent }) => {
             borderTop: '1px solid #e5e7eb'
           }}>
             <img
-              src={user?.user?.profilePic || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user?.username || 'User')}`}
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user?.username || 'User')}`}
               alt={user?.user?.username || 'User'}
               style={{
                 width: '32px',

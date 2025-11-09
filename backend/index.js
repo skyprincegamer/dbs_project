@@ -17,13 +17,17 @@ app.use(cors({
 }));
 
 const authRoutes = require('./routes/auth');
-const matchMakingRoutes = require('./routes/matchmaking');
+const article_addition = require('./routes/article_addition');
 const searchRoutes = require('./routes/search');
 const ratingRoutes = require('./routes/rating_routes');
 app.use('/', authRoutes);
-app.use('/matchmaking', matchMakingRoutes);
+app.use('/add-article', article_addition);
 app.use('/search', searchRoutes);
 app.use('/rating_routes', ratingRoutes);
+
+app.listen(process.env.PORT, () => {
+  console.log(`Server is running on port ${process.env.PORT}`);
+})
 
 cron.schedule(`*/${(minTime / 60) / 1000} * * * *`, () => {
   clearUserCache();

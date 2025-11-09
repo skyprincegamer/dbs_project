@@ -91,6 +91,7 @@ router.post('/create-account', async (req, res) => {
 // POST /verify-account/:uuid
 router.post('/verify-account/:uuid', async (req, res) => {
   const { uuid } = req.params;
+  console.log('Verifying account for UUID:', uuid);
 
   // Check if the UUID is valid and user exists in tempUsers
   if (!tempUsers.has(uuid)) {
@@ -101,7 +102,7 @@ router.post('/verify-account/:uuid', async (req, res) => {
 
   // Create a new user in the database
   try {
-    const newUser = new User({ username, email, passwordHash, active: true });
+    const newUser = new User({ id: uuidv4(), username, email, passwordHash, active: true });
     await newUser.save();
     tempUsers.delete(uuid);
     res.status(200).json({ message: 'Account created successfully' });
@@ -139,7 +140,7 @@ router.post('/login', async (req, res) => {
   }
 
   // Generate a JWT token
-  const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
+  const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
   user.passwordHash = undefined; // Remove password hash from user object
   user.email = undefined; // Remove email from user object for security
