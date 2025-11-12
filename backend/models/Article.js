@@ -1,4 +1,5 @@
 const conn = require('../db/instance');
+const { objToSqlSetString } = require('../utils/queryBuildHelper');
 const uuidv4 = require('uuid').v4;
 class ArticleModel {
     constructor(data) {
@@ -250,6 +251,109 @@ class ArticleModel {
             )
         })
 
+    }
+    static voteArticle(article_id, user_id, value){
+        return new Promise((resolve , reject) => {
+            console.log(article_id, user_id, value);
+            if(value==-1){
+                // remove vote
+                const query = `
+                    DELETE FROM votes WHERE article_id = ? AND id = ?
+                `;
+                conn.query(
+                    query,
+                    [article_id, user_id], (err, result, fields) => {
+                        if(err)
+                            return reject(err)
+                        else {
+                            return resolve(result)
+                        }
+                    }
+                );
+            }else {
+                // if vote exists update else insert
+                const query = `
+                    INSERT INTO votes (article_id, id, value)
+                    VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE value = VALUES(value)
+                `;
+                console.log(article_id, user_id, value);
+                conn.query(query, [article_id, user_id, value === 1], (err, result, fields) => {
+                    if (err)
+                        return reject(err)
+                    else {
+                        return resolve(result)
+                    }
+                });
+            }
+        });
+    }
+
+    // Depricecated: use findByTags instead
+    static findByTags(tags) {
+        return new Promise((resolve, reject) => {
+            const afterWhere = objToSqlSetString(tags);
+            // Keep afterWhere as condition after WHERE in tags. Join with articles table to get title and join with users to get username
+
+            const queryString = `
+                SELECT articles.*, users.username FROM articles
+                JOIN tags ON articles.article_id = tags.article_id
+                JOIN users ON articles.id = users.id
+                WHERE ${afterWhere}
+                GROUP BY articles.article_id
+            `;
+            conn.query(queryString, (err, result) => {
+                if (err) {
+                    return reject(err);
+                } else {
+                    return resolve(result.length > 0 ? result : null);
+                }
+            });
+        })
+    }
+
+    static findByTag(tags){
+        return new Promise((resolve , reject) => {
+            const query = `
+                    SELECT users.username, articles.title, articles.article_id FROM tags
+                    JOIN articles ON articles.article_id = tags.article_id
+                    JOIN users ON articles.id = users.id
+                    WHERE tagName in (?)
+                    GROUP BY tags.article_id
+                `
+            conn.query(
+                query,
+                [tags], (err, result, fields) => {
+                    if(err)
+                        return reject(err)
+                    else if (result.length == 0)
+                        return resolve(null)
+                    else {
+                        return resolve(result)
+                    }
+                }
+            )
+        })  
+    }
+
+    static hasRated(user_id, article_id){
+        return new Promise((resolve , reject) => {
+            const query = `
+                    SELECT * FROM votes WHERE id = ? AND article_id = ?
+                `
+            conn.query(
+                query,
+                [user_id, article_id], (err, result, fields) => {
+                    if(err)
+                        return reject(err)
+                    else if (result.length == 0)
+                        return resolve(-1)
+                    else {
+                        return resolve(result[0].value)
+                    }
+                }
+            )
+        });
     }
 }
 

@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const ArticleModel = require('../models/Article');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
@@ -37,12 +38,52 @@ router.delete("/take_back/", tempMiddleWare, async (req, res) => {
         if (!toUser) {
             return res.status(404).json({ error: 'User not found' });
         }
-        // Business logic to remove rating
+        // -1 vote
+        await ArticleModel.voteArticle(from.id, toUser.id, -1);
         return res.status(200).json({ message: 'Rating taken back successfully' });
     } catch(e){
         console.log(e);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+router.post("/has_rated/", tempMiddleWare, async (req, res) => {
+    const { article_id } = req.body;
+    const from = req.user.id;
+    if(!article_id) {
+        return res.status(400).json({ error: 'Missing parameters' });
+    }
+    try{
+        const fromUser = await User.findById(from);
+        if (!fromUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const hasRated = await ArticleModel.hasRated(from.id, article_id);
+        return res.status(200).json({ hasRated });
+    } catch(e){
+        console.log(e);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.post("/rate/", tempMiddleWare, async (req, res) => {
+    const {article_id, vote} = req.body;
+    const from = req.user.id;
+    if(!article_id) {
+        return res.status(400).json({ error: 'Missing parameters' });
+    }
+    try{
+        const fromUser = await User.findById(from);
+        if (!fromUser) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        // vote
+        await ArticleModel.voteArticle(article_id, from, vote);
+        return res.status(200).json({ message: 'Rating submitted successfully' });
+    } catch(e){
+        console.log(e);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+})
 
 module.exports = router;

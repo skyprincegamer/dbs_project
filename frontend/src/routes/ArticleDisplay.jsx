@@ -11,6 +11,11 @@ export default function ArticleDisplay() {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ text: '', type: '' });
 
+    // Rating-related state
+    const [showRating, setShowRating] = useState(false); // false = don't render buttons (fetch failed)
+    const [ratingStatus, setRatingStatus] = useState(null); // 'up' | 'down' | null
+    const [ratingLoading, setRatingLoading] = useState(false);
+
     useEffect(() => {
         const fetchArticle = async () => {
             setLoading(true);
@@ -52,7 +57,35 @@ export default function ArticleDisplay() {
                 setArticle(data);
                 setTags(tag);
                 setRefs(ref);
-                console.log(ref)
+
+                // fetch rating status for this user/article
+                try {
+                  const rRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rating_routes/has_rated`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ token: localStorage.getItem('token'), article_id: uuid })
+                  });
+                  const rData = await rRes.json();
+                  if (!rRes.ok) {
+                    // do not show voting UI on failure
+                    setShowRating(false);
+                  } else {
+                    // Interpret server numeric into local status:
+                    // server: 1 => upvoted, -1 => downvoted, anything else => not voted
+                    if (rData && typeof rData.hasRated !== 'undefined') {
+                      if (rData.hasRated === 1) setRatingStatus('up');
+                      else if (rData.hasRated === -1) setRatingStatus('down');
+                      else setRatingStatus(null);
+                      setShowRating(true);
+                    } else {
+                      setShowRating(false);
+                    }
+                  }
+                } catch (err) {
+                  setShowRating(false);
+                }
+
                 const titles = ref ? await Promise.all(
                     ref.map(async (elem) => {
                         const uuid = elem.to_article_id;
@@ -76,6 +109,56 @@ export default function ArticleDisplay() {
 
         fetchArticle();
     }, [uuid]);
+
+    // voteType: 'up' | 'down'
+    const handleVote = async (voteType) => {
+      if (!showRating) return;
+      setMessage({ text: '', type: '' });
+
+      // decide payload vote according to current status and requested action
+      // API expects: 1 = upvote, 0 = downvote, -1 = take back vote
+      let payloadVote;
+      if (voteType === 'up') {
+        if (ratingStatus === 'up') {
+          payloadVote = -1; // take back
+        } else {
+          payloadVote = 1; // upvote (also used to switch from down->up)
+        }
+      } else {
+        // down
+        if (ratingStatus === 'down') {
+          payloadVote = -1; // take back
+        } else {
+          payloadVote = 0; // downvote (or switch from up->down)
+        }
+      }
+
+      setRatingLoading(true);
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rating_routes/rate/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ article_id: uuid, vote: payloadVote, token: localStorage.getItem('token') })
+        });
+        let data;
+        try { data = await res.json(); } catch { throw new Error(`Unexpected response (status ${res.status})`); }
+        if (!res.ok) throw new Error(data?.message || `Server error ${res.status}`);
+
+        // adjust local state based on request success
+        if (payloadVote === -1) {
+          setRatingStatus(null);
+        } else if (payloadVote === 1) {
+          setRatingStatus('up');
+        } else if (payloadVote === 0) {
+          setRatingStatus('down');
+        }
+      } catch (err) {
+        setMessage({ text: err.message || 'Unable to send vote', type: 'error' });
+      } finally {
+        setRatingLoading(false);
+      }
+    };
 
     return (
         <div style={{ maxWidth: '900px', margin: '2rem auto', padding: '0 1rem' }}>
@@ -109,6 +192,45 @@ export default function ArticleDisplay() {
                     >
                         {article.title}
                     </h1>
+
+                    {/* Voting UI (render only if rating fetch succeeded) */}
+                    {showRating && (
+                      <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+                        <button
+                          onClick={() => handleVote('up')}
+                          disabled={ratingLoading}
+                          aria-pressed={ratingStatus === 'up'}
+                          title={ratingStatus === 'up' ? 'Remove upvote' : 'Upvote'}
+                          style={{
+                            padding: '6px 10px',
+                            backgroundColor: ratingStatus === 'up' ? '#1e3a8a' : '#eef2ff',
+                            color: ratingStatus === 'up' ? '#fff' : '#1e3a8a',
+                            border: '1px solid #c7d2fe',
+                            borderRadius: 6,
+                            cursor: ratingLoading ? 'default' : 'pointer'
+                          }}
+                        >
+                          {ratingLoading ? <CircularProgress size={18} color={ratingStatus === 'up' ? '#fff' : '#1e3a8a'} /> : ((ratingStatus === 'up') ? "▲ Upvoted": '▲ Upvote')}
+                        </button>
+
+                        <button
+                          onClick={() => handleVote('down')}
+                          disabled={ratingLoading}
+                          aria-pressed={ratingStatus === 'down'}
+                          title={ratingStatus === 'down' ? 'Remove downvote' : 'Downvote'}
+                          style={{
+                            padding: '6px 10px',
+                            backgroundColor: ratingStatus === 'down' ? '#7f1d1d' : '#fff1f2',
+                            color: ratingStatus === 'down' ? '#fff' : '#7f1d1d',
+                            border: '1px solid #fecaca',
+                            borderRadius: 6,
+                            cursor: ratingLoading ? 'default' : 'pointer'
+                          }}
+                        >
+                          {ratingLoading ? <CircularProgress size={18} color={ratingStatus === 'down' ? '#fff' : '#7f1d1d'} /> : (ratingStatus === 'down') ? "▼ Downvoted": '▼ Downvote'}
+                        </button>
+                      </div>
+                    )}
 
                     <div
                         style={{

@@ -12,6 +12,7 @@ import NotFoundPage from './routes/NotFoundPage';
 import AddArticle from './routes/AddArticle';
 import SearchTags from './routes/search/SearchTags';
 import ArticleDisplay from './routes/ArticleDisplay'
+import TagSearch from './routes/search/TagSearch';
 
 const App = () => {
   return (

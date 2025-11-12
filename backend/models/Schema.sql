@@ -1,4 +1,4 @@
--- Users table (for reference)
+-- users table (for reference)
 CREATE TABLE users (
     id VARCHAR(36) PRIMARY KEY,
     username VARCHAR(255) UNIQUE,
@@ -7,7 +7,7 @@ CREATE TABLE users (
     active BOOLEAN
 );
 
--- Articles table
+-- articles table
 CREATE TABLE articles (
     article_id VARCHAR(36) PRIMARY KEY,
     id VARCHAR(36) REFERENCES users(id) ON DELETE CASCADE,
@@ -15,7 +15,7 @@ CREATE TABLE articles (
     content TEXT
 );
 
--- References table
+-- references_table
 CREATE TABLE references_table (
     article_id VARCHAR(36) REFERENCES articles(article_id) ON DELETE CASCADE,
     to_article_id VARCHAR(36) REFERENCES articles(article_id) ON DELETE CASCADE,
@@ -23,7 +23,7 @@ CREATE TABLE references_table (
     CHECK (article_id <> to_article_id)
 );
 
--- Votes table
+-- votes table
 CREATE TABLE votes (
     article_id VARCHAR(36) REFERENCES articles(article_id) ON DELETE CASCADE,
     id VARCHAR(36) REFERENCES users(id) ON DELETE CASCADE,
@@ -31,7 +31,7 @@ CREATE TABLE votes (
     PRIMARY KEY (article_id, id)
 );
 
--- Tags table
+-- tags table
 CREATE TABLE tags (
     article_id VARCHAR(36) REFERENCES articles(article_id) ON DELETE CASCADE,
     tagName VARCHAR(100),
