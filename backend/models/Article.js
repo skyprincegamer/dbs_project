@@ -346,9 +346,10 @@ class ArticleModel {
                 [user_id, article_id], (err, result, fields) => {
                     if(err)
                         return reject(err)
-                    else if (result.length == 0)
+                    else if (result.length == 0){
+                        console.log(result);
                         return resolve(-1)
-                    else {
+                    }else {
                         return resolve(result[0].value)
                     }
                 }

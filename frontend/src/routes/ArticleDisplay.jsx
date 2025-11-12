@@ -74,8 +74,9 @@ export default function ArticleDisplay() {
                     // Interpret server numeric into local status:
                     // server: 1 => upvoted, -1 => downvoted, anything else => not voted
                     if (rData && typeof rData.hasRated !== 'undefined') {
+                      console.log('User rating status for article:', rData.hasRated);
                       if (rData.hasRated === 1) setRatingStatus('up');
-                      else if (rData.hasRated === -1) setRatingStatus('down');
+                      else if (rData.hasRated === 0) setRatingStatus('down');
                       else setRatingStatus(null);
                       setShowRating(true);
                     } else {

@@ -58,7 +58,7 @@ router.post("/has_rated/", tempMiddleWare, async (req, res) => {
         if (!fromUser) {
             return res.status(404).json({ error: 'User not found' });
         }
-        const hasRated = await ArticleModel.hasRated(from.id, article_id);
+        const hasRated = await ArticleModel.hasRated(from, article_id);
         return res.status(200).json({ hasRated });
     } catch(e){
         console.log(e);
