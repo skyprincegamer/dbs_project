@@ -17,11 +17,12 @@ The project is a web app designed for sharing authentic Articles. Users can read
 1. User Registration and Login
 2. Article Creation
 3. Article Reading
-4. Article Referencing
+4. Article Editing
+5. Article Referencing
 6. Article Upvote/Downvote
-6. Article Search  
-    6.1. By Title  
-    6.2. By Tags
+7. Article Search  
+    7.1. By Title  
+    7.2. By Tags
 
 ## ER Diagram
 
