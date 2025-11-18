@@ -59,7 +59,7 @@ router.post("/has_rated/", tempMiddleWare, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
         const hasRated = await ArticleModel.hasRated(from, article_id);
-        return res.status(200).json({ hasRated });
+        return res.status(200).json(hasRated);
     } catch(e){
         console.log(e);
         return res.status(500).json({ error: 'Internal server error' });

@@ -17,7 +17,7 @@ const Login = () => {
     setLocalLoading(true);
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/search');
     } catch (err) {
       if (err.message) {
         setError(err.message);

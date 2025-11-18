@@ -194,6 +194,122 @@ class ArticleModel {
             });
         });
     }
+
+    edit() {
+        const articleData = this;
+
+        return new Promise((resolve, reject) => {
+            if (!articleData.article_id) {
+                return reject(new Error('Missing article_id for edit'));
+            }
+
+            conn.beginTransaction(async (txErr) => {
+                if (txErr) return reject(txErr);
+
+                try {
+                    // check title uniqueness (allow same title for same article_id)
+                    const checkTitleQuery = `SELECT article_id FROM articles WHERE title = ? LIMIT 1`;
+                    const existingRows = await new Promise((res, rej) => {
+                        conn.query(checkTitleQuery, [articleData.title], (err, rows) => {
+                            if (err) return rej(err);
+                            res(rows);
+                        });
+                    });
+
+                    if (existingRows && existingRows.length > 0) {
+                        const existing = existingRows[0];
+                        if (existing.article_id !== articleData.article_id) {
+                            const error = new Error(`Article title "${articleData.title}" already exists.`);
+                            error.name = 'RepeatedTitleError';
+                            await conn.rollback();
+                            return reject(error);
+                        }
+                    }
+
+                    // validate references exist (normalize references to ids)
+                    const references = Array.isArray(articleData.references)
+                        ? articleData.references.map(r => r.to_article_id || r)
+                        : [];
+
+                    if (references.length > 0) {
+                        const checkRefsQuery = `SELECT article_id FROM articles WHERE article_id IN (?)`;
+                        const [foundRefs] = await new Promise((res, rej) => {
+                            conn.query(checkRefsQuery, [references], (err, rows) => {
+                                if (err) return rej(err);
+                                res([rows]);
+                            });
+                        });
+
+                        const foundIds = foundRefs.map(r => r.article_id);
+                        const missingRefs = references.filter(id => !foundIds.includes(id));
+                        if (missingRefs.length > 0) {
+                            const error = new Error(`Invalid references: ${missingRefs.join(', ')}`);
+                            error.name = 'ReferenceError';
+                            await conn.rollback();
+                            return reject(error);
+                        }
+                    }
+
+                    // update articles table (title, content)
+                    const updateArticleQuery = `
+                        UPDATE articles
+                        SET title = ?, content = ?
+                        WHERE article_id = ?
+                    `;
+                    await new Promise((res, rej) => {
+                        conn.query(updateArticleQuery, [articleData.title, articleData.content, articleData.article_id], (err) => {
+                            if (err) return rej(err);
+                            res();
+                        });
+                    });
+
+                    // replace tags: delete existing, then insert new if provided
+                    await new Promise((res, rej) => {
+                        conn.query(`DELETE FROM tags WHERE article_id = ?`, [articleData.article_id], (err) => {
+                            if (err) return rej(err);
+                            res();
+                        });
+                    });
+
+                    if (Array.isArray(articleData.tags) && articleData.tags.length > 0) {
+                        const insertTagsQuery = `INSERT INTO tags (article_id, tagName) VALUES ?`;
+                        const tagValues = articleData.tags.map(tag => [articleData.article_id, tag]);
+                        await new Promise((res, rej) => {
+                            conn.query(insertTagsQuery, [tagValues], (err) => (err ? rej(err) : res()));
+                        });
+                    }
+
+                    // replace references: delete existing, then insert new if provided
+                    await new Promise((res, rej) => {
+                        conn.query(`DELETE FROM references_table WHERE article_id = ?`, [articleData.article_id], (err) => {
+                            if (err) return rej(err);
+                            res();
+                        });
+                    });
+
+                    if (references.length > 0) {
+                        const insertRefsQuery = `INSERT INTO references_table (article_id, to_article_id) VALUES ?`;
+                        const refValues = references.map(toId => [articleData.article_id, toId]);
+                        await new Promise((res, rej) => {
+                            conn.query(insertRefsQuery, [refValues], (err) => (err ? rej(err) : res()));
+                        });
+                    }
+
+                    // commit
+                    conn.commit((commitErr) => {
+                        if (commitErr) {
+                            conn.rollback(() => reject(commitErr));
+                        } else {
+                            // return updated model instance
+                            resolve(new ArticleModel(articleData));
+                        }
+                    });
+                } catch (err) {
+                    conn.rollback(() => reject(err));
+                }
+            });
+        });
+    }
     static findByID(id){
         return new Promise((resolve , reject) => {
             const query = `
@@ -338,22 +454,38 @@ class ArticleModel {
 
     static hasRated(user_id, article_id){
         return new Promise((resolve , reject) => {
-            const query = `
-                    SELECT * FROM votes WHERE id = ? AND article_id = ?
-                `
-            conn.query(
-                query,
-                [user_id, article_id], (err, result, fields) => {
-                    if(err)
-                        return reject(err)
-                    else if (result.length == 0){
-                        console.log(result);
-                        return resolve(-1)
-                    }else {
-                        return resolve(result[0].value)
+            const countQuery = `
+                SELECT 
+                    SUM(CASE WHEN value = TRUE THEN 1 ELSE 0 END) AS upvotes,
+                    SUM(CASE WHEN value = FALSE THEN 1 ELSE 0 END) AS downvotes
+                FROM votes
+                WHERE article_id = ?
+            `;
+            conn.query(countQuery, [article_id], (countErr, countRows) => {
+                if (countErr) return reject(countErr);
+
+                const upvotes = (countRows && countRows[0] && countRows[0].upvotes) ? Number(countRows[0].upvotes) : 0;
+                const downvotes = (countRows && countRows[0] && countRows[0].downvotes) ? Number(countRows[0].downvotes) : 0;
+
+                const userQuery = `
+                    SELECT value FROM votes WHERE id = ? AND article_id = ? LIMIT 1
+                `;
+                conn.query(userQuery, [user_id, article_id], (userErr, userRows) => {
+                    if (userErr) return reject(userErr);
+
+                    // hasRated:  1 => upvoted, -1 => downvoted, 0 => not voted
+                    let hasRated = 0;
+                    if (!userRows || userRows.length === 0) {
+                        hasRated = 0;
+                    } else {
+                        // value stored as boolean (TRUE for upvote, FALSE for downvote)
+                        const val = userRows[0].value;
+                        hasRated = val ? 1 : -1;
                     }
-                }
-            )
+
+                    return resolve({ hasRated, upvotes, downvotes });
+                });
+            });
         });
     }
 }

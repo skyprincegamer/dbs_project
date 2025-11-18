@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {Link, useNavigate, useParams} from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import CircularProgress from '../components/CircularProgress';
 
 export default function ArticleDisplay() {
@@ -7,7 +7,7 @@ export default function ArticleDisplay() {
     const [article, setArticle] = useState(null);
     const [tags, setTags] = useState(null);
     const [refs, setRefs] = useState(null);
-    const [refTitles , setRefTitles] = useState(null);
+    const [refTitles, setRefTitles] = useState(null);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ text: '', type: '' });
 
@@ -15,6 +15,8 @@ export default function ArticleDisplay() {
     const [showRating, setShowRating] = useState(false); // false = don't render buttons (fetch failed)
     const [ratingStatus, setRatingStatus] = useState(null); // 'up' | 'down' | null
     const [ratingLoading, setRatingLoading] = useState(false);
+    const [upvotes, setUpvotes] = useState(0);
+    const [downvotes, setDownvotes] = useState(0);
 
     useEffect(() => {
         const fetchArticle = async () => {
@@ -30,22 +32,22 @@ export default function ArticleDisplay() {
                 });
                 const t = await fetch(`${import.meta.env.VITE_BACKEND_URL}/tags/${uuid}`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({token: localStorage.getItem('token')})
-                })
+                    body: JSON.stringify({ token: localStorage.getItem('token') })
+                });
                 const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/references/${uuid}`, {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({token: localStorage.getItem('token')})
-                })
+                    body: JSON.stringify({ token: localStorage.getItem('token') })
+                });
 
-                let data , tag, ref;
+                let data, tag, ref;
                 try {
                     data = await res.json();
-                    tag = await t.json()
-                    ref = await r.json()
+                    tag = await t.json();
+                    ref = await r.json();
                 } catch {
                     throw new Error('Invalid response from server');
                 }
@@ -58,48 +60,50 @@ export default function ArticleDisplay() {
                 setTags(tag);
                 setRefs(ref);
 
-                // fetch rating status for this user/article
+                // fetch rating status for this user/article (now returns { hasRated, upvotes, downvotes })
                 try {
-                  const rRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rating_routes/has_rated`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ token: localStorage.getItem('token'), article_id: uuid })
-                  });
-                  const rData = await rRes.json();
-                  if (!rRes.ok) {
-                    // do not show voting UI on failure
-                    setShowRating(false);
-                  } else {
-                    // Interpret server numeric into local status:
-                    // server: 1 => upvoted, -1 => downvoted, anything else => not voted
-                    if (rData && typeof rData.hasRated !== 'undefined') {
-                      console.log('User rating status for article:', rData.hasRated);
-                      if (rData.hasRated === 1) setRatingStatus('up');
-                      else if (rData.hasRated === 0) setRatingStatus('down');
-                      else setRatingStatus(null);
-                      setShowRating(true);
+                    const rRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rating_routes/has_rated`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ token: localStorage.getItem('token'), article_id: uuid })
+                    });
+                    const rData = await rRes.json();
+                    if (!rRes.ok) {
+                        // do not show voting UI on failure
+                        setShowRating(false);
                     } else {
-                      setShowRating(false);
+                        // rData: { hasRated, upvotes, downvotes }
+                        const serverHasRated = typeof rData.hasRated !== 'undefined' ? rData.hasRated : null;
+                        // map server hasRated to local status: 1 => up, -1 => down, 0 or null => not voted
+                        if (serverHasRated === 1) setRatingStatus('up');
+                        else if (serverHasRated === -1) setRatingStatus('down');
+                        else setRatingStatus(null);
+
+                        setUpvotes(Number(rData.upvotes || 0));
+                        setDownvotes(Number(rData.downvotes || 0));
+                        setShowRating(true);
                     }
-                  }
                 } catch (err) {
-                  setShowRating(false);
+                    // silently disable rating UI if has_rated check fails
+                    setShowRating(false);
                 }
 
-                const titles = ref ? await Promise.all(
-                    ref.map(async (elem) => {
-                        const uuid = elem.to_article_id;
-                        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/article/${uuid}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({ token: localStorage.getItem('token') })
-                        });
-                        const art = await res.json();
-                        return art.title;
-                    })
-                ) : null;
+                const titles = ref
+                    ? await Promise.all(
+                          ref.map(async (elem) => {
+                              const refUuid = elem.to_article_id;
+                              const res2 = await fetch(`${import.meta.env.VITE_BACKEND_URL}/article/${refUuid}`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  credentials: 'include',
+                                  body: JSON.stringify({ token: localStorage.getItem('token') })
+                              });
+                              const art = await res2.json();
+                              return art.title;
+                          })
+                      )
+                    : null;
                 setRefTitles(titles);
             } catch (err) {
                 setMessage({ text: err.message || 'Error loading article', type: 'error' });
@@ -113,52 +117,92 @@ export default function ArticleDisplay() {
 
     // voteType: 'up' | 'down'
     const handleVote = async (voteType) => {
-      if (!showRating) return;
-      setMessage({ text: '', type: '' });
+        if (!showRating) return;
+        setMessage({ text: '', type: '' });
 
-      // decide payload vote according to current status and requested action
-      // API expects: 1 = upvote, 0 = downvote, -1 = take back vote
-      let payloadVote;
-      if (voteType === 'up') {
-        if (ratingStatus === 'up') {
-          payloadVote = -1; // take back
+        // decide payload vote according to current status and requested action
+        // API expects: 1 = upvote, 0 = downvote, -1 = take back vote
+        let payloadVote;
+        if (voteType === 'up') {
+            if (ratingStatus === 'up') {
+                payloadVote = -1; // take back
+            } else {
+                payloadVote = 1; // upvote (also used to switch from down->up)
+            }
         } else {
-          payloadVote = 1; // upvote (also used to switch from down->up)
+            // down
+            if (ratingStatus === 'down') {
+                payloadVote = -1; // take back
+            } else {
+                payloadVote = 0; // downvote (or switch from up->down)
+            }
         }
-      } else {
-        // down
-        if (ratingStatus === 'down') {
-          payloadVote = -1; // take back
-        } else {
-          payloadVote = 0; // downvote (or switch from up->down)
-        }
-      }
 
-      setRatingLoading(true);
-      try {
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rating_routes/rate/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ article_id: uuid, vote: payloadVote, token: localStorage.getItem('token') })
-        });
-        let data;
-        try { data = await res.json(); } catch { throw new Error(`Unexpected response (status ${res.status})`); }
-        if (!res.ok) throw new Error(data?.message || `Server error ${res.status}`);
+        // optimistic UI: disable while processing
+        setRatingLoading(true);
+        try {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rating_routes/rate/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ article_id: uuid, vote: payloadVote, token: localStorage.getItem('token') })
+            });
 
-        // adjust local state based on request success
-        if (payloadVote === -1) {
-          setRatingStatus(null);
-        } else if (payloadVote === 1) {
-          setRatingStatus('up');
-        } else if (payloadVote === 0) {
-          setRatingStatus('down');
+            let data;
+            try {
+                data = await res.json();
+            } catch {
+                throw new Error(`Unexpected response (status ${res.status})`);
+            }
+
+            if (!res.ok) throw new Error(data?.message || `Server error ${res.status}`);
+
+            // server may return updated counts; prefer them
+            if (typeof data.upvotes !== 'undefined' && typeof data.downvotes !== 'undefined') {
+                setUpvotes(Number(data.upvotes));
+                setDownvotes(Number(data.downvotes));
+            } else {
+                // otherwise compute based on previous state and transition
+                const prev = ratingStatus; // 'up' | 'down' | null
+                let next = null;
+                if (payloadVote === -1) next = null;
+                else if (payloadVote === 1) next = 'up';
+                else if (payloadVote === 0) next = 'down';
+
+                // copy current counts
+                let u = upvotes;
+                let d = downvotes;
+
+                if (prev === null) {
+                    if (next === 'up') u += 1;
+                    if (next === 'down') d += 1;
+                } else if (prev === 'up') {
+                    if (next === null) u = Math.max(0, u - 1);
+                    if (next === 'down') {
+                        u = Math.max(0, u - 1);
+                        d += 1;
+                    }
+                } else if (prev === 'down') {
+                    if (next === null) d = Math.max(0, d - 1);
+                    if (next === 'up') {
+                        d = Math.max(0, d - 1);
+                        u += 1;
+                    }
+                }
+
+                setUpvotes(u);
+                setDownvotes(d);
+            }
+
+            // set new local ratingStatus according to payload
+            if (payloadVote === -1) setRatingStatus(null);
+            else if (payloadVote === 1) setRatingStatus('up');
+            else if (payloadVote === 0) setRatingStatus('down');
+        } catch (err) {
+            setMessage({ text: err.message || 'Unable to send vote', type: 'error' });
+        } finally {
+            setRatingLoading(false);
         }
-      } catch (err) {
-        setMessage({ text: err.message || 'Unable to send vote', type: 'error' });
-      } finally {
-        setRatingLoading(false);
-      }
     };
 
     return (
@@ -196,41 +240,49 @@ export default function ArticleDisplay() {
 
                     {/* Voting UI (render only if rating fetch succeeded) */}
                     {showRating && (
-                      <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
-                        <button
-                          onClick={() => handleVote('up')}
-                          disabled={ratingLoading}
-                          aria-pressed={ratingStatus === 'up'}
-                          title={ratingStatus === 'up' ? 'Remove upvote' : 'Upvote'}
-                          style={{
-                            padding: '6px 10px',
-                            backgroundColor: ratingStatus === 'up' ? '#1e3a8a' : '#eef2ff',
-                            color: ratingStatus === 'up' ? '#fff' : '#1e3a8a',
-                            border: '1px solid #c7d2fe',
-                            borderRadius: 6,
-                            cursor: ratingLoading ? 'default' : 'pointer'
-                          }}
-                        >
-                          {ratingLoading ? <CircularProgress size={18} color={ratingStatus === 'up' ? '#fff' : '#1e3a8a'} /> : ((ratingStatus === 'up') ? "▲ Upvoted": '▲ Upvote')}
-                        </button>
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
+                            <button
+                                onClick={() => handleVote('up')}
+                                disabled={ratingLoading}
+                                aria-pressed={ratingStatus === 'up'}
+                                title={ratingStatus === 'up' ? 'Remove upvote' : 'Upvote'}
+                                style={{
+                                    padding: '6px 10px',
+                                    backgroundColor: ratingStatus === 'up' ? '#1e3a8a' : '#eef2ff',
+                                    color: ratingStatus === 'up' ? '#fff' : '#1e3a8a',
+                                    border: '1px solid #c7d2fe',
+                                    borderRadius: 6,
+                                    cursor: ratingLoading ? 'default' : 'pointer'
+                                }}
+                            >
+                                {ratingLoading ? (
+                                    <CircularProgress size={18} color={ratingStatus === 'up' ? '#fff' : '#1e3a8a'} />
+                                ) : (
+                                    `▲ ${ratingStatus === 'up' ? 'Upvoted' : 'Upvote'} (${upvotes})`
+                                )}
+                            </button>
 
-                        <button
-                          onClick={() => handleVote('down')}
-                          disabled={ratingLoading}
-                          aria-pressed={ratingStatus === 'down'}
-                          title={ratingStatus === 'down' ? 'Remove downvote' : 'Downvote'}
-                          style={{
-                            padding: '6px 10px',
-                            backgroundColor: ratingStatus === 'down' ? '#7f1d1d' : '#fff1f2',
-                            color: ratingStatus === 'down' ? '#fff' : '#7f1d1d',
-                            border: '1px solid #fecaca',
-                            borderRadius: 6,
-                            cursor: ratingLoading ? 'default' : 'pointer'
-                          }}
-                        >
-                          {ratingLoading ? <CircularProgress size={18} color={ratingStatus === 'down' ? '#fff' : '#7f1d1d'} /> : (ratingStatus === 'down') ? "▼ Downvoted": '▼ Downvote'}
-                        </button>
-                      </div>
+                            <button
+                                onClick={() => handleVote('down')}
+                                disabled={ratingLoading}
+                                aria-pressed={ratingStatus === 'down'}
+                                title={ratingStatus === 'down' ? 'Remove downvote' : 'Downvote'}
+                                style={{
+                                    padding: '6px 10px',
+                                    backgroundColor: ratingStatus === 'down' ? '#7f1d1d' : '#fff1f2',
+                                    color: ratingStatus === 'down' ? '#fff' : '#7f1d1d',
+                                    border: '1px solid #fecaca',
+                                    borderRadius: 6,
+                                    cursor: ratingLoading ? 'default' : 'pointer'
+                                }}
+                            >
+                                {ratingLoading ? (
+                                    <CircularProgress size={18} color={ratingStatus === 'down' ? '#fff' : '#7f1d1d'} />
+                                ) : (
+                                    `▼ ${ratingStatus === 'down' ? 'Downvoted' : 'Downvote'} (${downvotes})`
+                                )}
+                            </button>
+                        </div>
                     )}
 
                     <div
@@ -247,26 +299,35 @@ export default function ArticleDisplay() {
                     >
                         {article.content}
                     </div>
-                <div>
-                    <h4>TAGS</h4>
-                    <ul>{tags ? tags.map((elem) => <li key={elem.tagName} style={{
-                        listStyle : "none"
-                    }}>#{elem.tagName}</li>) : " "}
+
+                    <div>
+                        <h4>TAGS</h4>
+                        <ul>
+                            {tags
+                                ? tags.map((elem) => (
+                                      <li key={elem.tagName} style={{ listStyle: 'none' }}>
+                                          #{elem.tagName}
+                                      </li>
+                                  ))
+                                : ' '}
                         </ul>
-                </div>
-                <div>
-                    <h4>References</h4>
-                    <ul>
-                        {refs ? refs.map((elem, index) => <li key={elem.to_article_id}>
-                            <Link to={`/article/${elem.to_article_id}`}>
-                                {`${import.meta.env.VITE_BACKEND_URL}/article/${elem.to_article_id}`}
-                            </Link>
-                            <h6>
-                                {refTitles? refTitles[index] : " "}
-                            </h6>
-                        </li> ) : " "}
-                    </ul>
-                </div>
+                    </div>
+
+                    <div>
+                        <h4>References</h4>
+                        <ul>
+                            {refs
+                                ? refs.map((elem, index) => (
+                                      <li key={elem.to_article_id}>
+                                          <Link to={`/article/${elem.to_article_id}`}>
+                                              {`${import.meta.env.VITE_BACKEND_URL}/article/${elem.to_article_id}`}
+                                          </Link>
+                                          <h6>{refTitles ? refTitles[index] : ' '}</h6>
+                                      </li>
+                                  ))
+                                : ' '}
+                        </ul>
+                    </div>
                 </div>
             )}
         </div>

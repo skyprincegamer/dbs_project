@@ -132,7 +132,7 @@ const CreateAccount = () => {
             Create Account
           </h2>
           <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-            Join PaperPedia to start learning and teaching
+            Join PaperPedia to read teh most insighful and consistant articles.
           </p>
         </div>
 

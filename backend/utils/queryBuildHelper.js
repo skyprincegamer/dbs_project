@@ -17,10 +17,11 @@ const objToSqlSetString = (obj) => {
 }
 
 // test
-// console.log(objToSqlSetString({OR: [
+// console.log(objToSqlSetString({AND: [
 //     "JS",
 //     "HTML",
-//     {not: "CSS"}
+//     {not: "CSS"},
+//     {OR: ["Python", "Java"]}
 // ]}));
 
 module.exports = {

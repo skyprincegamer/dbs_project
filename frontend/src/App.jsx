@@ -12,7 +12,7 @@ import NotFoundPage from './routes/NotFoundPage';
 import AddArticle from './routes/AddArticle';
 import SearchTags from './routes/search/SearchTags';
 import ArticleDisplay from './routes/ArticleDisplay'
-import TagSearch from './routes/search/TagSearch';
+import ArticleEdit from './routes/ArticleEdit';
 
 const App = () => {
   return (
@@ -27,7 +27,8 @@ const App = () => {
           {/* <Route path="/dashboard" element={<ProtectedRoute component={Dashboard}/>} /> */}
           <Route path="/search" element={<ProtectedRoute component={Search}/>} />
           <Route path="/searchtags" element={<ProtectedRoute component={SearchTags}/>} />
-          <Route path="/profile/:id" element={<Profile />} />
+          <Route path="edit/:uuid" element={<ProtectedRoute component={ArticleEdit}/>}/>
+          <Route path="/profile/:id" element={<ArticleEdit />} />
             <Route path="/article/:uuid" element={<ProtectedRoute component={ArticleDisplay}/>}/>
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
